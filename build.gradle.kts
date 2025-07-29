@@ -33,6 +33,8 @@ repositories {
 dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
+    implementation("org.nanohttpd:nanohttpd:2.3.1")
+    implementation("org.json:json:20231013")
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
@@ -123,6 +125,12 @@ kover {
     }
 }
 
+tasks.processResources {
+    from("src/main/resources")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    exclude("web/precommit-ai/fast_api/genai-env/**")
+    exclude("web/precommit-ai/node_modules/**")
+}
 tasks {
     wrapper {
         gradleVersion = providers.gradleProperty("gradleVersion").get()

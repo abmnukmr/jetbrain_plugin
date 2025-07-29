@@ -1,45 +1,169 @@
 package com.github.abmnukmr.jetbrainplugin.toolWindow
 
-import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.thisLogger
+import org.json.JSONObject
+import com.github.abmnukmr.jetbrainplugin.services.StaticFileServer
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
-import com.intellij.ui.components.JBLabel
-import com.intellij.ui.components.JBPanel
 import com.intellij.ui.content.ContentFactory
-import com.github.abmnukmr.jetbrainplugin.MyBundle
-import com.github.abmnukmr.jetbrainplugin.services.MyProjectService
-import javax.swing.JButton
+import com.intellij.ui.jcef.JBCefBrowser
+import com.intellij.ui.jcef.JBCefBrowserBase
+import com.intellij.ui.jcef.JBCefJSQuery
+import org.cef.browser.CefBrowser
+import org.cef.browser.CefFrame
+import org.cef.browser.CefMessageRouter
+import org.cef.callback.CefQueryCallback
+import org.cef.handler.CefLoadHandlerAdapter
+import org.cef.handler.CefMessageRouterHandlerAdapter
+import java.io.File
+import java.io.FileOutputStream
+import java.net.JarURLConnection
+import java.nio.file.Files
+import java.util.jar.JarFile
 
 
 class MyToolWindowFactory : ToolWindowFactory {
 
-    init {
-        thisLogger().warn("Don't forget to remove all non-needed sample code files with their corresponding registration entries in `plugin.xml`.")
-    }
+   // private val log = Logger.getInstance(MyToolWindowFactory::class.java)
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val myToolWindow = MyToolWindow(toolWindow)
-        val content = ContentFactory.getInstance().createContent(myToolWindow.getContent(), null, false)
+        // 1. Extract Next.js static site into a temp directory
+        val tempDir = Files.createTempDirectory("next").toFile()
+        extractResources("web/precommit-ai/out", tempDir)
+
+        // 2. Serve the static site (ensure StaticFileServer supports index.html fallback)
+        val server = StaticFileServer(tempDir, 63342)
+        server.start()
+
+        // 3. Setup JCEF browser pointing to index.html
+        val browser = JBCefBrowser("http://localhost:63342/index.html")
+        browser.openDevtools()
+
+        val client = browser.jbCefClient
+        val cefBrowser = browser.cefBrowser
+
+        // 4. Setup message router (React ➝ Plugin via window.cefQuery)
+        val router = CefMessageRouter.create()
+        router.addHandler(object : CefMessageRouterHandlerAdapter() {
+            override fun onQuery(
+                browser: CefBrowser?,
+                frame: CefFrame?,
+                queryId: Long,
+                request: String,
+                persistent: Boolean,
+                callback: CefQueryCallback
+            ): Boolean {
+                println("📩 Received from web view: $request")
+                callback.success("✅ Plugin received: $request")
+                return true
+            }
+        }, true)
+
+        router.addHandler(object : CefMessageRouterHandlerAdapter() {
+            override fun onQuery(browser: CefBrowser?, frame: CefFrame?, queryId: Long, request: String, persistent: Boolean, callback: CefQueryCallback): Boolean {
+                val json = JSONObject(request)
+                when (json.getString("command")) {
+                    "readFile" -> {
+                        val path = json.getString("path")
+                        val contents = File(path).readText()
+                        callback.success(contents)
+                    }
+                    "writeFile" -> {
+                        val path = json.getString("path")
+                        val contents = json.getString("contents")
+                        File(path).writeText(contents)
+                        callback.success("✅ Written")
+                    }
+                    else -> callback.failure(404, "Unknown command")
+                }
+                return true
+            }
+        }, true)
+
+        client.cefClient.addMessageRouter(router)
+
+        // 5. Setup JBCefJSQuery to receive plugin-safe messages from webView
+        val jsQuery = JBCefJSQuery.create(browser as JBCefBrowserBase)
+        jsQuery.addHandler { message ->
+            println("📨 [JSQuery] Received from React: $message")
+            null
+        }
+
+        // 6. Inject JavaScript bridge after page load (persistent via MutationObserver)
+        client.addLoadHandler(object : CefLoadHandlerAdapter() {
+            override fun onLoadEnd(
+                cefBrowser: CefBrowser?,
+                frame: CefFrame?,
+                httpStatusCode: Int
+            ) {
+                if (frame?.isMain == true) {
+                    val jsToInject = """
+                    (function() {
+                        function injectPluginBridge() {
+                            if (typeof window.__sendToPlugin === 'undefined') {
+                                window.__sendToPlugin = function(data) {
+                                    window.cefQuery({
+                                        request: JSON.stringify(data),
+                                        onSuccess: function(response) {
+                                            console.log("✅ Plugin responded:", response);
+                                        },
+                                        onFailure: function(errCode, errMsg) {
+                                            console.error("❌ Plugin error:", errCode, errMsg);
+                                        }
+                                    });
+                                    window.postMessage({ command: "pluginReady" }, "*");
+                                    console.log("🔗 __sendToPlugin injected");
+                                };
+                            }
+                        }
+
+                        injectPluginBridge();
+
+                        const observer = new MutationObserver(injectPluginBridge);
+                        observer.observe(document.body || document.documentElement, {
+                            childList: true,
+                            subtree: true
+                        });
+
+                        setInterval(injectPluginBridge, 3000);
+                    })();
+                """.trimIndent()
+
+                    cefBrowser?.executeJavaScript(jsToInject, cefBrowser.url, 0)
+                }
+            }
+        }, cefBrowser)
+
+        // 7. Embed the browser in the ToolWindow
+        val content = ContentFactory.getInstance()
+            .createContent(browser.component, "", false)
         toolWindow.contentManager.addContent(content)
     }
 
-    override fun shouldBeAvailable(project: Project) = true
+    private fun extractResources(resourcePath: String, destDir: File) {
+        val resourceUrl = javaClass.classLoader.getResource(resourcePath)
+            ?: throw IllegalStateException("Resource not found: $resourcePath")
 
-    class MyToolWindow(toolWindow: ToolWindow) {
-
-        private val service = toolWindow.project.service<MyProjectService>()
-
-        fun getContent() = JBPanel<JBPanel<*>>().apply {
-            val label = JBLabel(MyBundle.message("randomLabel", "?"))
-
-            add(label)
-            add(JButton(MyBundle.message("shuffle")).apply {
-                addActionListener {
-                    label.text = MyBundle.message("randomLabel", service.getRandomNumber())
+        val connection = resourceUrl.openConnection()
+        if (connection is JarURLConnection) {
+            val jarFile: JarFile = connection.jarFile
+            jarFile.entries().asSequence().forEach { entry ->
+                if (entry.name.startsWith(resourcePath)) {
+                    val relative = entry.name.removePrefix("$resourcePath/")
+                    val outFile = File(destDir, relative)
+                    if (entry.isDirectory) {
+                        outFile.mkdirs()
+                    } else {
+                        outFile.parentFile.mkdirs()
+                        jarFile.getInputStream(entry).use { input ->
+                            FileOutputStream(outFile).use { output -> input.copyTo(output) }
+                        }
+                    }
                 }
-            })
+            }
+        } else {
+            // Dev mode: just copy files from disk
+            File(resourceUrl.toURI()).copyRecursively(destDir, overwrite = true)
         }
     }
 }
