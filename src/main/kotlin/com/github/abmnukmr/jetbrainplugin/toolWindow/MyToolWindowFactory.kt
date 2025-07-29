@@ -1,5 +1,6 @@
 package com.github.abmnukmr.jetbrainplugin.toolWindow
 
+import com.github.abmnukmr.jetbrainplugin.services.SSEClient
 import org.json.JSONObject
 import com.github.abmnukmr.jetbrainplugin.services.StaticFileServer
 import com.intellij.openapi.project.Project
@@ -21,17 +22,13 @@ import java.net.JarURLConnection
 import java.nio.file.Files
 import java.util.jar.JarFile
 
-
 class MyToolWindowFactory : ToolWindowFactory {
-
-   // private val log = Logger.getInstance(MyToolWindowFactory::class.java)
-
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         // 1. Extract Next.js static site into a temp directory
         val tempDir = Files.createTempDirectory("next").toFile()
         extractResources("web/precommit-ai/out", tempDir)
 
-        // 2. Serve the static site (ensure StaticFileServer supports index.html fallback)
+        // 2. Serve the static site
         val server = StaticFileServer(tempDir, 63342)
         server.start()
 
@@ -44,25 +41,16 @@ class MyToolWindowFactory : ToolWindowFactory {
 
         // 4. Setup message router (React ➝ Plugin via window.cefQuery)
         val router = CefMessageRouter.create()
-        router.addHandler(object : CefMessageRouterHandlerAdapter() {
-            override fun onQuery(
-                browser: CefBrowser?,
-                frame: CefFrame?,
-                queryId: Long,
-                request: String,
-                persistent: Boolean,
-                callback: CefQueryCallback
-            ): Boolean {
-                println("📩 Received from web view: $request")
-                callback.success("✅ Plugin received: $request")
-                return true
-            }
-        }, true)
+
 
         router.addHandler(object : CefMessageRouterHandlerAdapter() {
-            override fun onQuery(browser: CefBrowser?, frame: CefFrame?, queryId: Long, request: String, persistent: Boolean, callback: CefQueryCallback): Boolean {
+            override fun onQuery(browser: CefBrowser, frame: CefFrame?, queryId: Long, request: String, persistent: Boolean, callback: CefQueryCallback): Boolean {
                 val json = JSONObject(request)
-                when (json.getString("command")) {
+                println("Noted: $json")
+                when (json.getString("type")) {
+                    "generate" ->{
+                        SSEClient().startSSEStream(json.getString("payload"), browser);
+                    }
                     "readFile" -> {
                         val path = json.getString("path")
                         val contents = File(path).readText()
@@ -82,14 +70,14 @@ class MyToolWindowFactory : ToolWindowFactory {
 
         client.cefClient.addMessageRouter(router)
 
-        // 5. Setup JBCefJSQuery to receive plugin-safe messages from webView
+        // 5. Optional: Safe communication via JBCefJSQuery
         val jsQuery = JBCefJSQuery.create(browser as JBCefBrowserBase)
         jsQuery.addHandler { message ->
             println("📨 [JSQuery] Received from React: $message")
             null
         }
 
-        // 6. Inject JavaScript bridge after page load (persistent via MutationObserver)
+        // 6. Inject JavaScript bridge after page load
         client.addLoadHandler(object : CefLoadHandlerAdapter() {
             override fun onLoadEnd(
                 cefBrowser: CefBrowser?,
@@ -111,9 +99,11 @@ class MyToolWindowFactory : ToolWindowFactory {
                                             console.error("❌ Plugin error:", errCode, errMsg);
                                         }
                                     });
-                                    window.postMessage({ command: "pluginReady" }, "*");
-                                    console.log("🔗 __sendToPlugin injected");
                                 };
+                                
+                                // Send pluginReady message after injection
+                                window.postMessage({ command: "pluginReady" }, "*");
+                                console.log("🔗 __sendToPlugin injected and pluginReady posted");
                             }
                         }
 
@@ -127,14 +117,14 @@ class MyToolWindowFactory : ToolWindowFactory {
 
                         setInterval(injectPluginBridge, 3000);
                     })();
-                """.trimIndent()
+                    """.trimIndent()
 
                     cefBrowser?.executeJavaScript(jsToInject, cefBrowser.url, 0)
                 }
             }
         }, cefBrowser)
 
-        // 7. Embed the browser in the ToolWindow
+        // 7. Add browser to tool window
         val content = ContentFactory.getInstance()
             .createContent(browser.component, "", false)
         toolWindow.contentManager.addContent(content)
@@ -162,7 +152,6 @@ class MyToolWindowFactory : ToolWindowFactory {
                 }
             }
         } else {
-            // Dev mode: just copy files from disk
             File(resourceUrl.toURI()).copyRecursively(destDir, overwrite = true)
         }
     }
