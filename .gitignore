@@ -7,3 +7,4 @@ build
 src/main/resources/web.precommit-ai/node_modules/
 src/main/resources/web.precommit-ai/.next/
 src/main/resources/web.precommit-ai/out/
+src/main/resources/web.precommit-ai/_next/
