@@ -35,7 +35,7 @@ dependencies {
     testImplementation(libs.opentest4j)
     implementation("org.nanohttpd:nanohttpd:2.3.1")
     implementation("org.json:json:20231013")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp:5.1.0")
 
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
