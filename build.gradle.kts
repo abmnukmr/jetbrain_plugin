@@ -139,6 +139,8 @@ tasks.processResources {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     exclude("web/precommit-ai/fast_api/genai-env/**")
     exclude("web/precommit-ai/node_modules/**")
+    exclude("web/precommit-ai/.next/**")
+    exclude("web/precommit-ai/_next/**")
 }
 tasks {
     wrapper {
