@@ -1,5 +1,6 @@
 package com.github.abmnukmr.jetbrainplugin.toolWindow
 
+import com.github.abmnukmr.jetbrainplugin.services.ProjectFileOperation
 import com.github.abmnukmr.jetbrainplugin.services.SSEClient
 import org.json.JSONObject
 import com.github.abmnukmr.jetbrainplugin.services.StaticFileServer
@@ -46,11 +47,14 @@ class MyToolWindowFactory : ToolWindowFactory {
         router.addHandler(object : CefMessageRouterHandlerAdapter() {
             override fun onQuery(browser: CefBrowser, frame: CefFrame?, queryId: Long, request: String, persistent: Boolean, callback: CefQueryCallback): Boolean {
                 val json = JSONObject(request)
-                println("Noted: $json")
+                val filesPath = ProjectFileOperation().getAllProjectFilePaths(project)
+
+
                 when (json.getString("type")) {
                     "generate" ->{
                         SSEClient().startSSEStream(json.getString("payload"), browser);
                     }
+
                     "readFile" -> {
                         val path = json.getString("path")
                         val contents = File(path).readText()
@@ -73,7 +77,6 @@ class MyToolWindowFactory : ToolWindowFactory {
         // 5. Optional: Safe communication via JBCefJSQuery
         val jsQuery = JBCefJSQuery.create(browser as JBCefBrowserBase)
         jsQuery.addHandler { message ->
-            println("📨 [JSQuery] Received from React: $message")
             null
         }
 
@@ -103,6 +106,7 @@ class MyToolWindowFactory : ToolWindowFactory {
                                 
                                 // Send pluginReady message after injection
                                 window.postMessage({ command: "pluginReady" }, "*");
+                                
                                 console.log("🔗 __sendToPlugin injected and pluginReady posted");
                             }
                         }
