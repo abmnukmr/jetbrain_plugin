@@ -1,5 +1,6 @@
 package com.github.abmnukmr.jetbrainplugin.toolWindow
 
+import com.github.abmnukmr.jetbrainplugin.services.DirectoryPicker
 import com.github.abmnukmr.jetbrainplugin.services.ProjectFileOperation
 import com.github.abmnukmr.jetbrainplugin.services.SSEClient
 import org.json.JSONObject
@@ -50,11 +51,18 @@ class MyToolWindowFactory : ToolWindowFactory {
                 val filesPath = ProjectFileOperation().getAllProjectFilePaths(project)
 
 
+                println("Json== ${json.getString("type")}")
                 when (json.getString("type")) {
                     "generate" ->{
                         SSEClient().startSSEStream(json.getString("payload"), browser);
                     }
+                    "chooseDirectory" ->{
+                        DirectoryPicker().createDirectoryPickerPanel(project, browser);
+                    }
 
+                    "preCommit-ai-setup" ->{
+                        //DirectoryPicker().getGitTrackedFiles(project);
+                    }
                     "readFile" -> {
                         val path = json.getString("path")
                         val contents = File(path).readText()
