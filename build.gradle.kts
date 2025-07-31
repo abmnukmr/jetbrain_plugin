@@ -38,9 +38,9 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     // If using Swing or Dispatchers.Main
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
 
     implementation("io.ktor:ktor-client-core:2.3.4")
     implementation("io.ktor:ktor-client-cio:2.3.4")
