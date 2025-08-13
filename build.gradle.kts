@@ -36,15 +36,17 @@ dependencies {
     implementation("org.nanohttpd:nanohttpd:2.3.1")
     implementation("org.json:json:20231013")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.vladsch.flexmark:flexmark-all:0.64.8")
 
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-swing")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    // If using Swing or Dispatchers.Main
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
 
     implementation("io.ktor:ktor-client-core:2.3.4")
     implementation("io.ktor:ktor-client-cio:2.3.4")
-    implementation("com.jetbrains.git:gitignore:1.0.1")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
+    //implementation("com.jetbrains.git:gitignore:1.0.1")
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {

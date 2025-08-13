@@ -1,10 +1,15 @@
 package com.github.abmnukmr.jetbrainplugin.toolWindow
 
-import com.github.abmnukmr.jetbrainplugin.services.DirectoryPicker
-import com.github.abmnukmr.jetbrainplugin.services.ProjectFileOperation
-import com.github.abmnukmr.jetbrainplugin.services.SSEClient
+import com.github.abmnukmr.jetbrainplugin.listener.SelectionGutterListener
+import com.github.abmnukmr.jetbrainplugin.listener.SelectionInputInlayListener
+import com.github.abmnukmr.jetbrainplugin.listener.SelectionInputPopupListener
+import com.github.abmnukmr.jetbrainplugin.listener.SelectionSuggestListener
+import com.github.abmnukmr.jetbrainplugin.services.*
+import com.intellij.openapi.editor.event.SelectionEvent
+import com.intellij.openapi.editor.event.SelectionListener
+import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import org.json.JSONObject
-import com.github.abmnukmr.jetbrainplugin.services.StaticFileServer
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
@@ -23,9 +28,19 @@ import java.io.FileOutputStream
 import java.net.JarURLConnection
 import java.nio.file.Files
 import java.util.jar.JarFile
+import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.EditorFactory
+import com.intellij.openapi.editor.ex.EditorEx
+import com.intellij.openapi.fileEditor.FileEditorManagerEvent
+import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.TextRange
+
 
 class MyToolWindowFactory : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+
+        EditorFactory.getInstance().eventMulticaster.addSelectionListener(SelectionGutterListener(project), project)
+
         // 1. Extract Next.js static site into a temp directory
         val tempDir = Files.createTempDirectory("next").toFile()
         extractResources("web/precommit-ai/out", tempDir)
@@ -50,19 +65,24 @@ class MyToolWindowFactory : ToolWindowFactory {
                 val json = JSONObject(request)
                 val filesPath = ProjectFileOperation().getAllProjectFilePaths(project)
 
-
-                println("Json== ${json.getString("type")}")
+                println("file path== $filesPath")
                 when (json.getString("type")) {
                     "generate" ->{
                         SSEClient().startSSEStream(json.getString("payload"), browser);
                     }
+                    "stopStream" ->{
+                        SSEClient().stopSSEStream(browser);
+                    }
                     "chooseDirectory" ->{
-                        DirectoryPicker().createDirectoryPickerPanel(project, browser);
+                        ReadWrite().insertSuggestionWithClickHandlers(project,"console.log(1)")
+
+                       /// DirectoryPicker().createDirectoryPickerPanel(project, browser);
                     }
 
-                    "preCommit-ai-setup" ->{
-                        //DirectoryPicker().getGitTrackedFiles(project);
+                    "preCommit-ai-setup" -> {
+                        DirectoryPicker().getFilesNotIgnored(project, null,browser);
                     }
+
                     "readFile" -> {
                         val path = json.getString("path")
                         val contents = File(path).readText()
@@ -142,6 +162,9 @@ class MyToolWindowFactory : ToolWindowFactory {
         toolWindow.contentManager.addContent(content)
     }
 
+
+
+
     private fun extractResources(resourcePath: String, destDir: File) {
         val resourceUrl = javaClass.classLoader.getResource(resourcePath)
             ?: throw IllegalStateException("Resource not found: $resourcePath")
@@ -167,4 +190,7 @@ class MyToolWindowFactory : ToolWindowFactory {
             File(resourceUrl.toURI()).copyRecursively(destDir, overwrite = true)
         }
     }
+
+
+
 }

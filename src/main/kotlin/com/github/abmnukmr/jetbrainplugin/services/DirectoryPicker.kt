@@ -10,7 +10,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import org.cef.browser.CefBrowser
 import org.json.JSONObject
 import java.io.File
-import gitignore.GitIgnoreParser
 
 class DirectoryPicker {
     fun createDirectoryPickerPanel(project: Project, cefBrowser: CefBrowser) {
@@ -49,11 +48,6 @@ class DirectoryPicker {
                 val quotedPaths = allPaths.map { JSONObject.quote(it) }.joinToString(", ")
                 val rootPath = JSONObject.quote(rootDir?.path ?: "")
 
-                println("{\n" +
-                        "                        command: \"directorySelected\",\n" +
-                        "                        files: [ $quotedPaths ],\n" +
-                        "                        rootPath: $rootPath\n" +
-                        "                    }")
                 val js = """
                     window.postMessage({
                         command: "directorySelected",
@@ -69,25 +63,38 @@ class DirectoryPicker {
 
 
 
-    fun getFilesNotIgnored(project: Project): List<String> {
-        val basePath = project.basePath ?: return emptyList()
+    fun getFilesNotIgnored(project: Project, scanDir: File? = null, cefBrowser: CefBrowser) {
+        val basePath = project.basePath ?: return
         val projectDir = File(basePath)
-        val gitignoreFile = File(projectDir, ".gitignore")
+        val directoryToScan = scanDir ?: projectDir
 
-        // If .gitignore doesn't exist, return all files
-        if (!gitignoreFile.exists()) {
-            return projectDir.walkTopDown()
-                .filter { it.isFile }
-                .map { it.absolutePath }
-                .toList()
+        val gitignoreFile = File(projectDir, ".gitignore")
+        val parser = if (gitignoreFile.exists()) {
+            GitIgnoreParser(gitignoreFile.readLines())
+        } else {
+            GitIgnoreParser(emptyList())
         }
 
-        val parser = GitIgnoreParser(gitignoreFile.readLines())
-
-        return projectDir.walkTopDown()
+        val allPaths = directoryToScan.walkTopDown()
             .filter { it.isFile }
             .filterNot { parser.isIgnored(it.relativeTo(projectDir).path) }
             .map { it.absolutePath }
             .toList()
+
+        val quotedPaths = allPaths.map { JSONObject.quote(it) }.joinToString(", ")
+        val rootPath = JSONObject.quote(basePath ?: "")
+
+        println("[ $quotedPaths ]");
+
+        val js = """
+            window.postMessage({
+                command: "initiallyDirectorySelected",
+                files: [ $quotedPaths ],
+                rootPath: $rootPath
+            }, "*");
+            """.trimIndent()
+
+        cefBrowser.executeJavaScript(js, cefBrowser.url, 0)
     }
+
 }

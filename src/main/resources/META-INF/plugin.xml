@@ -11,5 +11,55 @@
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow factoryClass="com.github.abmnukmr.jetbrainplugin.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
         <postStartupActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.MyProjectActivity" />
+        <completion.contributor language="ANY"
+                                implementationClass="com.github.abmnukmr.jetbrainplugin.intellisence.AIAutocompleteContributor"/>
     </extensions>
+
+    <actions>
+        <action
+            id="com.github.abmnukmr.EditorIllustrationAction"
+            class="com.github.abmnukmr.jetbrainplugin.actions.EditorIllustrationAction"
+            text="Replace Selection with 'editor_basics'"
+            description="Replaces selected text with the string 'editor_basics'">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        <!-- Optional: add to toolbar or menus -->
+         <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt E"/>
+        </action>
+
+        <action
+                id="com.github.abmnukmr.ShowMessageOverTextAction"
+                class="com.github.abmnukmr.jetbrainplugin.actions.ShowMessageOverTextAction"
+                text="Replace Selection with 'editor_basics'"
+                description="Replaces selected text with the string 'ShowMessageOverTextAction'">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <!-- Optional: add to toolbar or menus -->
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt E"/>
+        </action>
+
+
+        <action
+                id="com.github.abmnukmr.ShowCopilotInputBoxAction"
+                class="com.github.abmnukmr.jetbrainplugin.actions.ShowCopilotInputBoxAction"
+                text="Replace Selection with 'ShowCopilotInputBoxAction'"
+                description="Replaces selected text with the string 'ShowCopilotInputBoxAction'">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <!-- Optional: add to toolbar or menus -->
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt E"/>
+        </action>
+
+
+
+
+    </actions>
+
+
+    <applicationListeners>
+        <listener
+                class="com.github.abmnukmr.jetbrainplugin.listener.SelectionInputInlayListener"
+                topic="com.intellij.util.messages.TopicName" />
+
+        <listener
+                class="com.github.abmnukmr.jetbrainplugin.autoCompletetion.KeySuggestionListener"
+                topic="com.intellij.openapi.editor.event.EditorFactoryListener"/>
+    </applicationListeners>
 </idea-plugin>
