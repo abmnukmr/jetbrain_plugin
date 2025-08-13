@@ -34,7 +34,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
     implementation("org.nanohttpd:nanohttpd:2.3.1")
-    implementation("org.json:json:20231013")
+    implementation("org.json:json:20250517")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.vladsch.flexmark:flexmark-all:0.64.8")
 
