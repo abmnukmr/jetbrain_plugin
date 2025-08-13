@@ -1,0 +1,191 @@
+/* Base .shiki wrapper styles */
+.shiki {
+  color: #c9d1d9;
+  font-family: 'Fira Code', 'Source Code Pro', monospace;
+  font-size: 0.875rem;
+  /* text-sm */
+  padding: 1rem;
+  /* p-4 */
+  border-radius: 0.5rem;
+  /* rounded-md */
+  overflow-x: auto;
+  line-height: 1;
+  white-space: pre;
+
+}
+
+/* Line-level */
+.shiki .line {
+  display: block;
+  min-height: 1rem;
+ 
+}
+
+.code-foreground-dark {
+  background-color: #1a1922;
+  /* Default text color */
+}
+
+.code-foreground-light {
+  background-color: #f1ecec;
+  /* Default text color */
+}
+
+
+/* Token types (GitHub Dark theme colors) */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: #8b949e;
+}
+
+.token.punctuation {
+  color: #c9d1d9;
+}
+
+.token.property,
+.token.tag,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: #ff7b72;
+}
+
+.token.boolean,
+.token.number {
+  color: #79c0ff;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: #a5d6ff;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.token.variable {
+  color: #d2a8ff;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.function,
+.token.class-name {
+  color: #ffa657;
+}
+
+.token.keyword {
+  color: #72aaff;
+}
+
+.token.regex,
+.token.important {
+  color: #f2cc60;
+}
+
+.token.bold {
+  font-weight: bold;
+}
+
+.token.italic {
+  font-style: italic;
+}
+
+.token.entity {
+  cursor: help;
+}
+
+
+
+.wrapper {
+  background-color: #0d1117;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  border: 1px solid #30363d;
+  font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
+}
+
+.pre {
+  margin: 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #c9d1d9;
+    user-select: text !important;
+      -webkit-user-select: text !important;
+      -moz-user-select: text !important;
+}
+
+.loading {
+  color: #ffffff;
+}
+
+
+
+/* Lock gutter to the left and scroll only code */
+.diff-container {
+  display: flex;
+  width: max-content;
+}
+
+
+.diff-code {
+  overflow-x: auto;
+}
+
+/* Optional: prevent code block inside from breaking layout */
+.shiki-render pre {
+  overflow-x: auto;
+  white-space: pre;
+}
+
+
+
+.border-gradient-animated {
+  border-width: 0.5px;
+  border-style: solid;
+  border-radius: 1rem;
+  border-image: linear-gradient(120deg,
+      #00ffea,
+      #6f7bf7,
+      #a259ff,
+      #f4845f,
+      #00ffea) 1;
+  animation: borderMove 2s linear infinite;
+}
+
+@keyframes borderMove {
+  0% {
+    border-image-source: linear-gradient(120deg,
+        #00ffea,
+        #6f7bf7,
+        #a259ff,
+        #f4845f,
+        #00ffea);
+  }
+
+  100% {
+    border-image-source: linear-gradient(480deg,
+        #00ffea,
+        #6f7bf7,
+        #a259ff,
+        #f4845f,
+        #00ffea);
+  }
+}
+
+
+
+.highlight {
+  padding: 0 2px;
+  border-radius: 2px;
+}
