@@ -9,10 +9,51 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.abmnukmr.jetbrainplugin.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
+        <toolWindow factoryClass="com.github.abmnukmr.jetbrainplugin.toolWindow.MyToolWindowFactory" id="Precommit-ai"/>
+
         <postStartupActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.MyProjectActivity" />
-        <completion.contributor language="ANY"
-                                implementationClass="com.github.abmnukmr.jetbrainplugin.intellisence.AIAutocompleteContributor"/>
+
+
+        <postStartupActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.CodeSuggestionActivity"/>
+
+        <postStartupActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.PromptPopupActivity"/>
+
+
+        <projectActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.MyProjectActivity"/>
+
+
+        <projectActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.CodeSuggestionActivity"/>
+
+        <projectActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.PromptPopupActivity"/>
+
+
+        <completion.contributor
+                language="ANY"
+                implementationClass="com.github.abmnukmr.jetbrainplugin.intellisence.AIAutocompleteContributor"/>
+
+        <!-- Java -->
+        <inlayProvider
+                language="JAVA"
+                implementationClass="com.github.abmnukmr.jetbrainplugin.hints.MyInlayHintsProvider"/>
+
+        <!-- JavaScript -->
+        <inlayProvider
+                language="JavaScript"
+                implementationClass="com.github.abmnukmr.jetbrainplugin.hints.MyInlayHintsProvider"/>
+
+        <!-- TypeScript -->
+        <inlayProvider
+                language="TypeScript"
+                implementationClass="com.github.abmnukmr.jetbrainplugin.hints.MyInlayHintsProvider"/>
+
+        <!-- Python -->
+        <inlayProvider
+                language="Python"
+                implementationClass="com.github.abmnukmr.jetbrainplugin.hints.MyInlayHintsProvider"/>
+
+
+        <editorFactoryListener implementation="com.github.abmnukmr.jetbrainplugin.intellisence.GhostTextEditorListener"/>
+
     </extensions>
 
     <actions>
@@ -45,6 +86,22 @@
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             <!-- Optional: add to toolbar or menus -->
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt E"/>
+
+            <action id="GhostTextAction"
+                    class="com.github.abmnukmr.jetbrainplugin.actions.GhostTextAction"
+                    text="Insert Ghost Text"
+                    description="Shows ghost text inline in editor">
+                <keyboard-shortcut keymap="$default" first-keystroke="alt ENTER"/>
+            </action>
+
+            <!-- Our custom TAB action -->
+            <action id="GhostText.AcceptAction"
+                    class="com.github.abmnukmr.jetbrainplugin.intellisence.AcceptGhostTextAction"
+                    text="Accept Ghost Text"
+                    description="Accept ghost text or fallback to Tab">
+                <keyboard-shortcut keymap="$default" first-keystroke="TAB"/>
+            </action>
+
         </action>
 
 
@@ -61,5 +118,14 @@
         <listener
                 class="com.github.abmnukmr.jetbrainplugin.autoCompletetion.KeySuggestionListener"
                 topic="com.intellij.openapi.editor.event.EditorFactoryListener"/>
+
+
+        <listener
+                class="com.github.abmnukmr.jetbrainplugin.autoCompletetion."
+                topic="com.intellij.openapi.editor.event.EditorFactoryListener"/>
+
+
+
+
     </applicationListeners>
 </idea-plugin>
