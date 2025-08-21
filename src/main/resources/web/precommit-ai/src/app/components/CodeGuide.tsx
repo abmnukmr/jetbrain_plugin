@@ -7,27 +7,39 @@ import {
   CirclePlus,
   EllipsisVertical,
   MoveUp,
+  FileStack,
+  CircleOff
 } from "lucide-react";
 import SearchBar from "./UiComponents/textBlock/Searchbar";
+import GradientFileIcon  from './UiComponents/GradientFileIcon'
+import FileTree from "./UiComponents/FileTree";
 import { useSentToJetBrain } from "../hooks/useSentToJetBrain"
+import { useSelectDirectory } from "../context/SelectDirectoryContext";
+type MessageType = {
+  role: "user" | "assistant";
+  text: string;
+  files?: string[]; // optional list of file paths
+};
 
-type MessageType = { role: "user" | "assistant"; text: string };
 
 const CodeGuide: React.FC = () => {
+
   const { theme } = useSelectTheme();
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [input, setInput] = useState("");
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const [streamCompleted, setStreamCompleted] = useState(false);
+  const [streamCompleted, setStreamCompleted] = useState(true);
   const streamRef = useRef(""); // running string from stream
 
 
   const [pluginReady, setPluginReady] = useState(false);
-
+  const { selectedDirectory, setSelectedDirectory, selectedFiles, setSelectedFiles } = useSelectDirectory();
   const sendToPlugin = useSentToJetBrain(pluginReady)
+
+  const [directory, setDirectory] = useState<string | null>(null);
+  const [files, setFiles] = useState<string[]>([]);
 
 
   const appendToLastAssistant = (chunk: string) => {
@@ -67,6 +79,17 @@ useEffect(() => {
         setPluginReady(true);
         break;
 
+
+      case "directorySelected":
+          setDirectory(msg?.rootPath)
+          setFiles(msg?.files)
+          break;
+
+      case "initiallyDirectorySelected":
+            setSelectedDirectory(msg?.rootPath)
+            setSelectedFiles(msg?.files)
+            break;
+
       case "response":
         const chunk = msg.chunk ?? "";
         setStreamCompleted(false);
@@ -88,8 +111,10 @@ useEffect(() => {
           }
 
           return [...prev, { role: "assistant", text: chunk }];
-        });
+        })
         break;
+
+
 
       case "responseCompleted":
         setStreamCompleted(true);
@@ -114,17 +139,41 @@ useEffect(() => {
 }, []);
 
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+ const handleSend = () => {
+   const trimmed = input.trim();
+   if (!trimmed) return;
 
-    const payload = input.trim();
-    setMessages((prev) => [...prev, { role: "user", text: payload }]);
-    setInput("");
-    streamRef.current = "";
-    sendToPlugin("generate", payload)
-  };
+   const payload = trimmed;
+   const payloadWithFiles = files ? payload + "\n\n" + JSON.stringify(files, null, 2) : payload;
+
+   const message: MessageType = {
+     role: "user",
+     text: payload,
+     files: files || undefined,
+   };
+
+   setMessages((prev) => [...prev, message]);
+   setInput("");
+
+   if (inputRef.current) {
+     inputRef.current.style.height = "auto";
+   }
+
+   sendToPlugin("generate", payloadWithFiles);
+
+   setFiles([]);
+ };
 
 
+    const handleMenu =()=>
+    {
+        sendToPlugin("chooseDirectory", "")
+    }
+
+
+   const stopStream = () =>{
+        sendToPlugin("stopStream", "")
+       }
 
 
 
@@ -133,7 +182,7 @@ useEffect(() => {
 
       window.cefQuery({
         request: JSON.stringify({
-          type: "preCommit-ai",
+          type: "preCommit-ai-setup",
           payload: "Hi plugin ",
         }),
         onSuccess: (response: string) => {
@@ -181,6 +230,15 @@ useEffect(() => {
               }
             >
               <Message role={msg.role} content={msg.text} />
+               {msg.files && msg.files.length > 0 && (
+                 <GradientFileIcon
+                   filename={ String(
+                     msg.files.length === 1
+                       ? msg.files[0].split("/").pop() // shows just the file name
+                       : "Attachment"
+                   )}
+                 />
+               )}
             </div>
           </div>
         ))}
@@ -217,12 +275,14 @@ useEffect(() => {
           />
           <div className="flex items-end gap-2 justify-between">
             <div className="flex items-center gap-1">
-              <SearchBar />
-
+              <SearchBar  onClick={handleMenu}/>
+              { files &&
+              <FileStack/>
+              }
               <button
                 type="button"
                 onClick={handleSend}
-                className={`flex items-center justify-center rounded-full w-5 h-5 transition ${
+                className={`flex items-center cursor-pointer justify-center rounded-full w-5 h-5 transition ${
                   theme === "dark"
                     ? "bg-white hover:bg-gray-200 text-black"
                     : "bg-gray-700 hover:bg-[#212121] text-white"
@@ -235,15 +295,20 @@ useEffect(() => {
 
             <button
               type="button"
-              onClick={() => {}}
-              className={`flex items-center justify-center rounded-full w-10 h-10 transition cursor pointer ${
+              onClick={streamCompleted ? handleSend :stopStream }
+              className={`flex  cursor-pointer items-center justify-center rounded-full w-10 h-10 transition cursor pointer ${
                 theme === "dark"
                   ? "bg-white hover:bg-gray-200 text-black"
                   : "bg-gray-700 hover:bg-[#212121] text-white"
               }`}
               title="Send"
             >
-              <ArrowUpFromDot />
+              {streamCompleted ? <ArrowUpFromDot /> :
+
+                <CircleOff/>
+
+              }
+
             </button>
           </div>
         </div>

@@ -35,3 +35,46 @@ export const isFilePath = (code: string): boolean => {
   const filePathRegex = /^\s*\/(?:[^\/\s]+\/)*[^\/\s]+\.\w+\s*$/;
   return filePathRegex.test(code);
 };
+
+
+type TreeNode = {
+  [key: string]: TreeNode | null; // null means it's a file, not a folder
+};
+
+export const buildFileTree = (paths: string[]): TreeNode => {
+  const root: TreeNode = {};
+
+  paths.forEach(path => {
+    const parts = path.split("/");
+    let current = root;
+
+    parts.forEach((part, i) => {
+      const isFile = i === parts.length - 1;
+      if (!current[part]) {
+        current[part] = isFile ? null : {};
+      }
+      if (!isFile && current[part]) {
+        current = current[part] as TreeNode;
+      }
+    });
+  });
+
+  return root;
+}
+
+export const  renderTree = (node: TreeNode, prefix = ""): string => {
+  const entries = Object.entries(node).sort(([a], [b]) => a.localeCompare(b));
+  return entries
+    .map(([name, child], index) => {
+      const isLast = index === entries.length - 1;
+      const branch = `${prefix}${isLast ? "└── " : "├── "}${name}`;
+      const children =
+        child && renderTree(child, prefix + (isLast ? "    " : "│   "));
+      return children ? `${branch}\n${children}` : branch;
+    })
+    .join("\n");
+}
+
+
+
+

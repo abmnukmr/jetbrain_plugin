@@ -30,6 +30,20 @@ import javax.swing.SwingUtilities
 class ReadWrite {
 
 
+    fun insertTextAtCaret(project: Project, editor: Editor, text: String) {
+        WriteCommandAction.runWriteCommandAction(project) {
+            val document = editor.document
+            val caretModel = editor.caretModel
+            val offset = caretModel.offset
+
+            // insert at caret
+            document.insertString(offset, text)
+
+            // move caret after inserted text
+            caretModel.moveToOffset(offset + text.length)
+        }
+    }
+
     fun writeToAbsolutePath(absolutePath: String, content: String) {
         val file = File(absolutePath)
 

@@ -1,4 +1,4 @@
-import { Play } from 'lucide-react';
+ import { Play } from 'lucide-react';
 
 const FilePathWithPlay = ({ path }: { path: string}) => {
  

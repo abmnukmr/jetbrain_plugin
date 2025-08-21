@@ -77,6 +77,18 @@ class ShimmeringGradientBorder(
         val shift = ((offset * n).roundToInt()) % n
         return Array(n) { i -> this[(i + shift) % n] }
     }
+
+    fun createRoundedBorder(color: Color, thickness: Int, radius: Int): AbstractBorder {
+        return object : AbstractBorder() {
+            override fun paintBorder(c: Component?, g: Graphics?, x: Int, y: Int, width: Int, height: Int) {
+                if (g !is Graphics2D) return
+                g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+                g.color = color
+                g.stroke = BasicStroke(thickness.toFloat())
+                g.drawRoundRect(x + thickness / 2, y + thickness / 2, width - thickness, height - thickness, radius, radius)
+            }
+        }
+    }
 }
 
 

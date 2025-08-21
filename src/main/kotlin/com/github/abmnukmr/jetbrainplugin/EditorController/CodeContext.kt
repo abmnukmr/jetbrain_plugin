@@ -19,6 +19,8 @@ import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.ast.Document
 import com.vladsch.flexmark.util.ast.TextCollectingVisitor
 import java.awt.*
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.JButton
@@ -201,6 +203,32 @@ class CodeContext {
             editor.contentComponent.addMouseListener(mouseAdapter)
             editor.contentComponent.addMouseMotionListener(mouseAdapter)
         }
+    }
+
+
+    fun lockEditor(editor: Editor) {
+        editor.contentComponent.addMouseListener(object : MouseAdapter() {
+            override fun mousePressed(e: MouseEvent) {
+                e.consume()
+            }
+            override fun mouseReleased(e: MouseEvent) {
+                e.consume()
+            }
+        })
+
+        editor.contentComponent.addKeyListener(object : KeyAdapter() {
+            override fun keyPressed(e: KeyEvent) {
+                e.consume()
+            }
+            override fun keyTyped(e: KeyEvent) {
+                e.consume()
+            }
+        })
+    }
+
+    fun unlockEditor(editor: Editor) {
+        editor.contentComponent.removeKeyListener(null)
+        editor.contentComponent.removeMouseListener(null)
     }
 
 }

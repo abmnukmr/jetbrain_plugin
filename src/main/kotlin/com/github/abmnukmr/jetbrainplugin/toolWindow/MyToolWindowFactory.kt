@@ -39,7 +39,6 @@ import com.intellij.openapi.util.TextRange
 class MyToolWindowFactory : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
 
-        EditorFactory.getInstance().eventMulticaster.addSelectionListener(SelectionGutterListener(project), project)
 
         // 1. Extract Next.js static site into a temp directory
         val tempDir = Files.createTempDirectory("next").toFile()

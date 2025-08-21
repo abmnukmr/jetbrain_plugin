@@ -1,5 +1,6 @@
 package com.github.abmnukmr.jetbrainplugin.listener
 
+import com.github.abmnukmr.jetbrainplugin.ui.InputPopup
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.Inlay
 import com.intellij.openapi.editor.InlayProperties
@@ -20,6 +21,7 @@ import javax.swing.JButton
 import javax.swing.JPanel
 import com.intellij.openapi.editor.EditorCustomElementRenderer
 import java.awt.event.MouseMotionAdapter
+import javax.swing.JLabel
 
 class SelectionSuggestListener(private val project: Project) : SelectionListener {
 
@@ -71,12 +73,22 @@ class SelectionSuggestListener(private val project: Project) : SelectionListener
             editor.contentComponent.addMouseListener(object : MouseAdapter() {
                 override fun mouseClicked(e: MouseEvent) {
                     if (e.clickCount != 1 || lastOffset == null) return
+
                     val clickPos = editor.xyToVisualPosition(e.point)
                     val clickOffset = editor.visualPositionToOffset(clickPos)
+
                     if (clickOffset == lastOffset) {
-                        showPopupAtOffset(editor, clickOffset)
+                        val point = editor.visualPositionToXY(editor.offsetToVisualPosition(offset)).apply {
+                            translate(0, editor.lineHeight)
+                        }
+
+                        // Convert to RelativePoint for the popup
+                        val relativePoint = RelativePoint(editor.contentComponent, point)
+
+                        InputPopup().showInputPopup(editor, relativePoint, project)
                     }
                 }
+
             })
             editor.contentComponent.addMouseMotionListener(object : MouseMotionAdapter() {
                 override fun mouseMoved(e: MouseEvent) {

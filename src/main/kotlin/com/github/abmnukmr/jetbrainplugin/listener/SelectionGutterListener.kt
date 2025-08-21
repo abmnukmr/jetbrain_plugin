@@ -53,11 +53,12 @@ class SelectionGutterListener(private val project: Project) : SelectionListener 
             override fun getClickAction(): AnAction? {
                 return object : AnAction() {
                     override fun actionPerformed(e: AnActionEvent) {
-                        val editor = e.getData(CommonDataKeys.EDITOR) ?: return
-                        val point = editor.visualPositionToXY(editor.offsetToVisualPosition(startOffset)).apply {
+                        val logicalPosition = editor.offsetToLogicalPosition(startOffset)
+                        val point = editor.logicalPositionToXY(logicalPosition).apply {
                             translate(0, editor.lineHeight)
                         }
-                        InputPopup().showInputPopup(editor, RelativePoint(editor.contentComponent, point), project)
+                        val relativePoint = RelativePoint(editor.contentComponent, point)
+                        InputPopup().showInputPopup(editor, relativePoint, project)
                     }
                 }
             }

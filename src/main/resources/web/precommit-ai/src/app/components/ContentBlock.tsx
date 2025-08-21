@@ -35,24 +35,19 @@ export const ContentBlock: Components = {
   }) {
     const { writeFile } = useFileReaderWriter();
     const { theme } = useSelectTheme();
-    const { selectedDirectory } = useSelectDirectory();
+    const { selectedDirectory, setSelectedDirectory, selectedFiles, setSelectedFiles } = useSelectDirectory();
     const { showNotification } = useNotification();
 
-    const [contextProjectPath, setContextProjectPath] = useState<string>("");
 
-    const [contextProjectFiles, setContextProjectFiles] = useState<string[]>(
-      []
-    );
 
     const [fileContent, setFileContent] = useState<string>("");
     const sendToVscode = useSendToVsCode();
+    const [debug, setDebug] = useState("");
 
     useEffect(() => {
       const handleMessage = (event: MessageEvent) => {
-        if (event?.data?.command === "workspaceData") {
-          setContextProjectPath(event?.data?.rootPath);
-          setContextProjectFiles(event?.data?.files);
-        }
+
+
 
         if (event.data.command === "getWorkspaceData") {
         }
@@ -61,69 +56,45 @@ export const ContentBlock: Components = {
           setFileContent(event?.data?.content);
         }
 
+
         if (event.data.command === "writeFile") {
         }
       };
 
       window.addEventListener("message", handleMessage);
       sendToVscode("getWorkspaceData", "Hello from React iframe! new");
-      // window.parent.postMessage(
-      //   {
-      //     command: "getWorkspaceData",
-      //     payload: "Hello from React iframe! new",
-      //   },
-      //   "*"
-      // );
+
 
       return () => window.removeEventListener("message", handleMessage);
     }, []);
 
     const readVSFileHandler = useCallback(
       (filePath: string) => {
-        sendToVscode("VSCodeReadFile", filePath);
-        // window.parent.postMessage(
-        //   {
-        //     command: "VSCodeReadFile",
-        //     payload: filePath,
-        //   },
-        //   "*"
-        // );
+
       },
-      [contextProjectPath]
+      [selectedDirectory]
     );
 
     const writeVSFileHandler = useCallback(
       (filePath: string, content: string) => {
-        sendToVscode("VSCodeWriteFile", JSON.stringify({ filePath, content }));
 
-        // window.parent.postMessage(
-        //   {
-        //     command: "VSCodeWriteFile",
-        //     payload: JSON.stringify({ filePath, content }),
-        //   },
-        //   "*"
-        // );
       },
-      [contextProjectPath]
+      [selectedDirectory]
     );
 
     const handleCopy = (e: React.FormEvent, path: string, code: string) => {
       e.preventDefault();
-      //if (!selectedDirectory) return showNotification('No directory selected for saving files.', { variant: 'error', duration: 3000 });
-      // writeFile(
-      //  `${selectedDirectory}/code-snippet.${lang}`,
-      //    code,
-      // );
+
 
       // Check if path exists and is outside the project root
-      if (path && !path.includes(contextProjectPath)) {
+      if (path && !path.includes(String(selectedDirectory))) {
         // Remove leading forward slash if present
         path = path.replace(/^\/+/, "");
 
         // Optionally prepend the correct root path
-        path = path.startsWith(contextProjectPath.split("/")[0])
+        path = path.startsWith(String(selectedDirectory).split("/")[0])
           ? path
-          : `${contextProjectPath}/${path}`;
+          : `${selectedDirectory}/${path}`;
       }
 
       writeVSFileHandler(path, code);
@@ -155,14 +126,14 @@ export const ContentBlock: Components = {
     const filePath = extractFirstFilePath(code); // Your function to extract path
 
     let path = filePath || "";
-    if (path && !path.includes(contextProjectPath)) {
+    if (path && !path.includes(String(selectedDirectory))) {
       // Remove leading forward slash if present
       path = path.replace(/^\/+/, "");
 
       // Optionally prepend the correct root path
-      path = path.startsWith(contextProjectPath)
+      path = path.startsWith(String(selectedDirectory))
         ? path
-        : `${contextProjectPath}/${path}`;
+        : `${String(selectedDirectory)}/${path}`;
     }
     const isFilePathDetected = isFilePath(code);
     const codeWithoutPath =

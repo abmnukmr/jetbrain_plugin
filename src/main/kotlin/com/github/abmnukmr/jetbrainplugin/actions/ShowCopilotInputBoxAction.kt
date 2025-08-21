@@ -1,5 +1,9 @@
 package com.github.abmnukmr.jetbrainplugin.actions
 
+import com.github.abmnukmr.jetbrainplugin.ui.InputPopup
+import com.github.abmnukmr.jetbrainplugin.ui.MLLIcons
+import com.github.abmnukmr.jetbrainplugin.ui.ShimmeringGradientBorder
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -14,23 +18,24 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.popup.JBPopupFactory
+import com.intellij.openapi.wm.WindowManager
 import com.intellij.ui.JBColor
+import com.intellij.ui.awt.RelativePoint
+import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBTextField
+import com.intellij.util.IconUtil
 import com.intellij.util.ui.JBUI
 import java.awt.*
 import javax.swing.*
 
 class ShowCopilotInputBoxAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
-        val project: Project = e.project ?: return
-        val editor: Editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return
+        val editor = e.getData(CommonDataKeys.EDITOR) ?: return
+        val project = e.project ?: return
+// Position near caret
+        InputPopup().showDialog(editor, project)
 
-        if (!editor.selectionModel.hasSelection()) {
-            Messages.showInfoMessage("Please select some text first.", "No Selection")
-            return
-        }
 
-        showInlineInputBox(project, editor)
     }
 
 

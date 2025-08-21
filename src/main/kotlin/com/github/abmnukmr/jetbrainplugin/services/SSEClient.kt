@@ -86,6 +86,8 @@ class SSEClient {
         }
     }
 
+
+
     fun stopSSEStream(cefBrowser: CefBrowser) {
         println("Stopping stream...")
         PluginCoroutineScope.sseJob?.cancel()
