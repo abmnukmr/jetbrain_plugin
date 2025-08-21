@@ -22,19 +22,30 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import groovy.json.StringEscapeUtils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.awt.Color
 
 class CodeSuggestionActivity : ProjectActivity {
 
-
     var codeToWrite = "";
+    var debounce = true;
+
     override suspend fun execute(project: Project) {
         val actionManager = ActionManager.getInstance()
         val tabAction = actionManager.getAction(IdeActions.ACTION_EDITOR_TAB) as EditorAction
 
         tabAction.setupHandler(object : EditorActionHandler() {
+
             override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
+                debounce = false;
                 ReadWrite().insertTextAtCaret(project,editor,codeToWrite)
+                CoroutineScope(Dispatchers.Default).launch {
+                    delay(3000)
+                    debounce =true
+                }
             }
         })
 
@@ -60,7 +71,8 @@ class CodeSuggestionActivity : ProjectActivity {
                 val psiFile: PsiFile? = PsiDocumentManager.getInstance(project).getPsiFile(document)
                 val language = psiFile?.language?.id ?: "Unknown"
 
-                if (lineText.isBlank() || lineText.contains("=")) {
+                if (debounce) {
+                    debounce = false;
                     // Call your HTTP client
                     client.fetchCompletionAsync(
                         codeBeforeCaret = textBeforeCaret,
@@ -72,6 +84,7 @@ class CodeSuggestionActivity : ProjectActivity {
                                 .trim()                     // remove leading/trailing whitespace
                                 .removePrefix("\"")         // remove leading quote
                                 .removeSuffix("\"")         // remove trailing quote
+                                .replace("`","")
                                 .let { StringEscapeUtils.unescapeJava(it) }  // handle \n, \"
                                 .replaceFirst("^```[a-zA-Z0-9]*\\s*".toRegex(), "")  // remove opening fence
                                 .replaceFirst("```$".toRegex(RegexOption.MULTILINE), "") // remove closing fence
@@ -79,6 +92,12 @@ class CodeSuggestionActivity : ProjectActivity {
                             val segment = GhostCodeManager.GhostSegment(codeToWrite, Color.GRAY)
 
                             ghostManager.showCodeGhostText(listOf(segment))
+
+                            CoroutineScope(Dispatchers.Default).launch {
+                                delay(3000)
+                                debounce =true
+                            }
+
 
                         },
                         onError = { error ->
@@ -117,5 +136,6 @@ class CodeSuggestionActivity : ProjectActivity {
 
         return document.getText(TextRange(caretOffset, endOffset))
     }
+
 
 }

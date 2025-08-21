@@ -28,12 +28,6 @@ import java.io.FileOutputStream
 import java.net.JarURLConnection
 import java.nio.file.Files
 import java.util.jar.JarFile
-import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.EditorFactory
-import com.intellij.openapi.editor.ex.EditorEx
-import com.intellij.openapi.fileEditor.FileEditorManagerEvent
-import com.intellij.openapi.util.Disposer
-import com.intellij.openapi.util.TextRange
 
 
 class MyToolWindowFactory : ToolWindowFactory {

@@ -36,32 +36,7 @@
     </extensions>
 
     <actions>
-        <action
-                id="com.github.abmnukmr.EditorIllustrationAction"
-                class="com.github.abmnukmr.jetbrainplugin.actions.EditorIllustrationAction"
-                text="Replace Selection with 'editor_basics'"
-                description="Replaces selected text with the string 'editor_basics'">
-            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
-            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt E"/>
-        </action>
 
-        <action
-                id="com.github.abmnukmr.ShowMessageOverTextAction"
-                class="com.github.abmnukmr.jetbrainplugin.actions.ShowMessageOverTextAction"
-                text="Show Message Over Text"
-                description="Replaces selected text with the string 'ShowMessageOverTextAction'">
-            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
-            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt E"/>
-        </action>
-
-        <action
-                id="com.github.abmnukmr.ShowCopilotInputBoxAction"
-                class="com.github.abmnukmr.jetbrainplugin.actions.ShowCopilotInputBoxAction"
-                text="Show Copilot Input Box"
-                description="Replaces selected text with the string 'ShowCopilotInputBoxAction'">
-            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
-            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt E"/>
-        </action>
 
         <action
                 id="GhostTextAction"
