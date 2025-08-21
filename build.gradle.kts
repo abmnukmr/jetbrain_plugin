@@ -35,12 +35,12 @@ dependencies {
     testImplementation(libs.opentest4j)
     implementation("org.nanohttpd:nanohttpd:2.3.1")
     implementation("org.json:json:20231013")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp:5.1.0")
     implementation("com.vladsch.flexmark:flexmark-all:0.64.8")
 
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0") // Gson converter
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:5.1.0")
     implementation("io.ktor:ktor-client-core:2.3.4")
     implementation("io.ktor:ktor-client-cio:2.3.4")
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
