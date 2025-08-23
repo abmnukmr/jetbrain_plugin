@@ -33,7 +33,6 @@ class GhostCodeManager(private val editor: Editor) {
                     .filter { it.isNotEmpty() }
                     .maxOfOrNull { metrics.stringWidth(it) }
 
-                // Fallback: return at least 1 to avoid "positive width" exception
                 return maxWidth ?: metrics.stringWidth(" ")
             }
 
@@ -50,6 +49,25 @@ class GhostCodeManager(private val editor: Editor) {
 
                 var y = targetRegion.y + editor.ascent
 
+                // -----------------------------
+                // 1. Draw the floating hint box
+                // -----------------------------
+                val hint = "Press Tab to accept · Esc to dismiss"
+                val hintWidth = g.fontMetrics.stringWidth(hint) + 20
+                val hintHeight = lineHeight
+
+                val hintX = targetRegion.x
+                val hintY = y - lineHeight - 6 // above ghost text
+
+                g.color = Color(245, 245, 245) // light gray bg
+                g.fillRoundRect(hintX, hintY - g.fontMetrics.ascent, hintWidth, hintHeight, 10, 10)
+
+                g.color = Color(90, 90, 90) // darker text
+                g.drawString(hint, hintX + 10, hintY)
+
+                // -----------------------------
+                // 2. Draw the ghost suggestion
+                // -----------------------------
                 for (segment in segments) {
                     val lines = segment.text.lines()
                     var x = targetRegion.x
@@ -67,7 +85,6 @@ class GhostCodeManager(private val editor: Editor) {
                 }
             }
         }
-
 
         currentInlay = inlayModel.addInlineElement(offset, true, renderer)
         addClickListener()

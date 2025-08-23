@@ -21,9 +21,12 @@ class GhostTextManager(private val editor: Editor) {
     private var currentText: String = ""
     private val segmentBounds = mutableListOf<Pair<String, Rectangle>>() // bounds per segment
     private var listenersAdded = false
+    private  var iSGhostTextVisibility = false;
+
 
     fun showGhostText(str: String="") {
         clearAllGhostText()
+
 
         val offset = editor.caretModel.offset
         val inlayModel: InlayModel = editor.inlayModel
@@ -34,9 +37,9 @@ class GhostTextManager(private val editor: Editor) {
                 listOf(str to Color(120, 193, 243, 80)) // single segment with a color
             } else {
                 listOf(
-                    "  ⌘ + Enter " to Color(120, 193, 243, 80),
-                    "to open " to Color(128, 128, 128, 70),
-                    "Precommit AI" to Color(255, 170, 170, 80)
+                    "  ⌘ + Enter " to Color(120, 193, 243, 100),
+                    "to open " to Color(128, 128, 128, 100),
+                    "Precommit AI" to Color(255, 170, 170, 100)
                 )
             }
 
@@ -68,6 +71,8 @@ class GhostTextManager(private val editor: Editor) {
 
         currentInlay = inlayModel.addInlineElement(offset, true, renderer)
 
+
+        iSGhostTextVisibility = true;
         addListeners()
     }
 
@@ -100,8 +105,9 @@ class GhostTextManager(private val editor: Editor) {
         })
     }
 
-
-
+    fun getVisibilityStatus(): Boolean {
+        return iSGhostTextVisibility
+    }
 
     fun acceptGhostText() {
         val inlay = currentInlay ?: return
@@ -126,6 +132,7 @@ class GhostTextManager(private val editor: Editor) {
     }
 
     fun clearAllGhostText() {
+        iSGhostTextVisibility= false;
         editor.inlayModel.getInlineElementsInRange(0, editor.document.textLength)
             .filter { it.renderer is EditorCustomElementRenderer }
             .forEach { it.dispose() }

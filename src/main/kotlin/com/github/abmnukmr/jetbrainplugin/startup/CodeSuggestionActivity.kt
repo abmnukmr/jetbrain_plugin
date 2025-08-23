@@ -16,6 +16,9 @@ import com.intellij.openapi.editor.actionSystem.EditorAction
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler
 import com.intellij.openapi.editor.event.CaretEvent
 import com.intellij.openapi.editor.event.CaretListener
+import com.intellij.openapi.editor.event.DocumentEvent
+import com.intellij.openapi.editor.event.DocumentListener
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.util.TextRange
@@ -32,46 +35,86 @@ class CodeSuggestionActivity : ProjectActivity {
 
     var codeToWrite = "";
     var debounce = true;
-
+    var textLeft = ""
     override suspend fun execute(project: Project) {
-        val actionManager = ActionManager.getInstance()
-        val tabAction = actionManager.getAction(IdeActions.ACTION_EDITOR_TAB) as EditorAction
+        val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return
 
+
+
+        val ghostManager = GhostCodeManager(editor)
+        val manager = editor.getUserData(AcceptGhostTextAction.KEY)
+            ?: GhostTextManager(editor).also {
+                editor.putUserData(AcceptGhostTextAction.KEY, it)
+            }
+
+        val textManager = GhostTextManager(editor);
+
+        val actionManager = ActionManager.getInstance()
+
+        val tabAction = actionManager.getAction(IdeActions.ACTION_EDITOR_TAB) as EditorAction
+        val escAction  = actionManager.getAction(IdeActions.ACTION_EDITOR_ESCAPE) as EditorAction
+
+        val originalHandler = tabAction.handler
         tabAction.setupHandler(object : EditorActionHandler() {
 
             override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
                 debounce = false;
-                ReadWrite().insertTextAtCaret(project,editor,codeToWrite)
+                if(!codeToWrite.isBlank()) {
+                    ReadWrite().insertTextAtCaret(project, editor, "$codeToWrite \n")
+
+                    codeToWrite = ""
+                    CoroutineScope(Dispatchers.Default).launch {
+                        delay(1000)
+                        debounce = true
+                    }
+                }
+                else {
+                    // Fallback to normal Tab behavior
+                    originalHandler.execute(editor, caret, dataContext)
+                }
+            }
+        })
+
+        escAction.setupHandler(object : EditorActionHandler() {
+
+            override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
+                debounce = false;
+                ghostManager.clearAllGhostText()
+                codeToWrite=""
                 CoroutineScope(Dispatchers.Default).launch {
-                    delay(3000)
+                    delay(1000)
                     debounce =true
                 }
             }
         })
 
+
+
         val client = MyHttpClient(project)
 
-        EditorFactory.getInstance().eventMulticaster.addCaretListener(object : CaretListener {
-            override fun caretPositionChanged(event: CaretEvent) {
-                val editor = event.editor
-                val ghostManager = GhostCodeManager(editor)
-                val manager = editor.getUserData(AcceptGhostTextAction.KEY)
-                    ?: GhostTextManager(editor).also {
-                        editor.putUserData(AcceptGhostTextAction.KEY, it)
-                    }
+
+
+
+        EditorFactory.getInstance().eventMulticaster.addDocumentListener(object : DocumentListener {
+            override fun documentChanged(event: DocumentEvent) {
+                ghostManager.clearAllGhostText();
+
+                val document = event.document
+                val editors = EditorFactory.getInstance().getEditors(document, project)
+                val editor = editors.firstOrNull() ?: return
 
                 val textBeforeCaret = getTextBeforeCaret(editor)
                 val textAfterCaret = getTextAfterCaret(editor)
                 val caretOffset = editor.caretModel.offset
-                val document = editor.document
                 val lineNumber = document.getLineNumber(caretOffset)
                 val lineStart = document.getLineStartOffset(lineNumber)
                 val lineEnd = document.getLineEndOffset(lineNumber)
                 val lineText = document.getText(TextRange(lineStart, lineEnd))
                 val psiFile: PsiFile? = PsiDocumentManager.getInstance(project).getPsiFile(document)
                 val language = psiFile?.language?.id ?: "Unknown"
-
-                if (debounce) {
+                textLeft = document.getText(TextRange(lineStart, caretOffset))
+                val textRight = document.getText(TextRange(caretOffset, lineEnd))
+                if (debounce && textRight.length<2) {
                     debounce = false;
                     // Call your HTTP client
                     client.fetchCompletionAsync(
@@ -81,20 +124,26 @@ class CodeSuggestionActivity : ProjectActivity {
                         language = language,
                         onSuccess = { completionResponse ->
                             codeToWrite = completionResponse.completion
-                                .trim()                     // remove leading/trailing whitespace
-                                .removePrefix("\"")         // remove leading quote
-                                .removeSuffix("\"")         // remove trailing quote
-                                .replace("`","")
-                                .let { StringEscapeUtils.unescapeJava(it) }  // handle \n, \"
-                                .replaceFirst("^```[a-zA-Z0-9]*\\s*".toRegex(), "")  // remove opening fence
-                                .replaceFirst("```$".toRegex(RegexOption.MULTILINE), "") // remove closing fence
-                            ;
-                            val segment = GhostCodeManager.GhostSegment(codeToWrite, Color.GRAY)
+                                .trim()
+                                .removePrefix("\"")
+                                .removeSuffix("\"")
+                                .let { StringEscapeUtils.unescapeJava(it) }
+                                // remove triple backtick + optional language
+                                .replaceFirst("^```[\\w-]*\\s*".toRegex(RegexOption.MULTILINE), "")
+                                .replaceFirst("```\\s*$".toRegex(RegexOption.MULTILINE), "")
+                                // remove any leading/trailing backticks (` or ````)
+                                .replaceFirst("^`+".toRegex(), "")
+                                .replaceFirst("`+$".toRegex(), "")
 
+                            codeToWrite = codeToWrite.removePrefix(textLeft.takeIf { codeToWrite.startsWith(it) } ?: "")
+
+                            if(textManager.getVisibilityStatus() && !codeToWrite.isBlank() ) textManager.clearAllGhostText()
+
+                            val segment = GhostCodeManager.GhostSegment(codeToWrite, Color.GRAY)
                             ghostManager.showCodeGhostText(listOf(segment))
 
                             CoroutineScope(Dispatchers.Default).launch {
-                                delay(3000)
+                                delay(1000)
                                 debounce =true
                             }
 
@@ -111,8 +160,7 @@ class CodeSuggestionActivity : ProjectActivity {
                     }
                 }
             }
-
-        }, project)
+        },project)
     }
 
     private fun getTextBeforeCaret(editor: Editor, maxLines: Int = 60): String {

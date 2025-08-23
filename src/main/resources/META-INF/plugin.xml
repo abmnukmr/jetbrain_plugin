@@ -15,10 +15,12 @@
         <postStartupActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.MyProjectActivity"/>
         <postStartupActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.CodeSuggestionActivity"/>
         <postStartupActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.PromptPopupActivity"/>
+        <postStartupActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.GhostTextActionActivity"/>
 
         <projectActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.MyProjectActivity"/>
         <projectActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.CodeSuggestionActivity"/>
         <projectActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.PromptPopupActivity"/>
+        <projectActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.GhostTextActionActivity"/>
 
         <!-- Completion Contributor -->
         <completion.contributor
