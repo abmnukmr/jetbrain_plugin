@@ -12,12 +12,10 @@
         <toolWindow factoryClass="com.github.abmnukmr.jetbrainplugin.toolWindow.MyToolWindowFactory" id="Precommit-ai"/>
 
         <!-- Startup Activities -->
-        <postStartupActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.MyProjectActivity"/>
         <postStartupActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.CodeSuggestionActivity"/>
         <postStartupActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.PromptPopupActivity"/>
         <postStartupActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.GhostTextActionActivity"/>
 
-        <projectActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.MyProjectActivity"/>
         <projectActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.CodeSuggestionActivity"/>
         <projectActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.PromptPopupActivity"/>
         <projectActivity implementation="com.github.abmnukmr.jetbrainplugin.startup.GhostTextActionActivity"/>
@@ -39,14 +37,42 @@
 
     <actions>
 
+        <action id="openInputPopup"
+                class="com.github.abmnukmr.jetbrainplugin.actions.OpenInputPopup"
+                text="Look into Precommit AI"
+                description="Show Precommit AI popup">
 
-        <action
-                id="GhostTextAction"
-                class="com.github.abmnukmr.jetbrainplugin.actions.GhostTextAction"
-                text="Insert Ghost Text"
-                description="Shows ghost text inline in editor">
-            <keyboard-shortcut keymap="$default" first-keystroke="alt ENTER"/>
+            <!-- Shortcut only works when editor is focused -->
+            <keyboard-shortcut keymap="$default" first-keystroke="meta shift L" context="Editor"/>
+
+            <!-- Optional: also add to editor right-click menu for visibility -->
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
         </action>
+
+        <action id="openReviewInputPopup"
+                class="com.github.abmnukmr.jetbrainplugin.actions.ReviewAction"
+                text="Review with Precommit AI"
+                description="Show Precommit AI popup">
+
+            <!-- Shortcut only works when editor is focused -->
+            <keyboard-shortcut keymap="$default" first-keystroke="meta shift R" context="Editor"/>
+
+            <!-- Optional: also add to editor right-click menu for visibility -->
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+        </action>
+
+        <action id="openFixInputPopup"
+                class="com.github.abmnukmr.jetbrainplugin.actions.FixAction"
+                text="Fix with Precommit AI"
+                description="Show Precommit AI popup">
+
+            <!-- Shortcut only works when editor is focused -->
+            <keyboard-shortcut keymap="$default" first-keystroke="meta shift F" context="Editor"/>
+
+            <!-- Optional: also add to editor right-click menu for visibility -->
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+        </action>
+
 
         <action
                 id="GhostText.AcceptAction"

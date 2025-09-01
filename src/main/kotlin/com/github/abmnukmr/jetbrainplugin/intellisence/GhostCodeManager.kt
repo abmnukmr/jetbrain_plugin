@@ -1,15 +1,22 @@
 package com.github.abmnukmr.jetbrainplugin.intellisence
 
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorCustomElementRenderer
 import com.intellij.openapi.editor.Inlay
 import com.intellij.openapi.editor.colors.EditorFontType
 import com.intellij.openapi.editor.markup.TextAttributes
-import java.awt.Color
-import java.awt.Graphics
-import java.awt.Rectangle
+import com.intellij.openapi.keymap.KeymapUtil
+import com.intellij.openapi.ui.popup.JBPopupFactory
+import com.intellij.ui.awt.RelativePoint
+import java.awt.*
+import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import javax.swing.JButton
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.KeyStroke
 
 class GhostCodeManager(private val editor: Editor) {
     private var currentInlay: Inlay<*>? = null
@@ -17,7 +24,7 @@ class GhostCodeManager(private val editor: Editor) {
 
     data class GhostSegment(val text: String, val color: Color)
 
-    fun showCodeGhostText(segments: List<GhostSegment>) {
+    fun showCodeGhostCode(segments: List<GhostSegment>) {
         clearAllGhostText()
         val offset = editor.caretModel.offset
         val inlayModel = editor.inlayModel
@@ -35,7 +42,6 @@ class GhostCodeManager(private val editor: Editor) {
 
                 return maxWidth ?: metrics.stringWidth(" ")
             }
-
             override fun paint(
                 inlay: Inlay<*>,
                 g: Graphics,
@@ -47,30 +53,28 @@ class GhostCodeManager(private val editor: Editor) {
                 g.font = font
                 val lineHeight = g.fontMetrics.height
 
+                val caretXY = editor.visualPositionToXY(editor.caretModel.visualPosition)
+                var x = caretXY.x
                 var y = targetRegion.y + editor.ascent
 
-                // -----------------------------
-                // 1. Draw the floating hint box
-                // -----------------------------
-                val hint = "Press Tab to accept · Esc to dismiss"
+                // 1. Draw hint above caret
+                val tabShortcut = KeymapUtil.getKeystrokeText(KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0))
+                val hint = "Press $tabShortcut to accept · Press Esc to dismiss"
+
                 val hintWidth = g.fontMetrics.stringWidth(hint) + 20
                 val hintHeight = lineHeight
+                val hintX = caretXY.x
+                val hintY = y - lineHeight - 6
 
-                val hintX = targetRegion.x
-                val hintY = y - lineHeight - 6 // above ghost text
-
-                g.color = Color(245, 245, 245) // light gray bg
+                g.color = Color(24, 24, 24)
                 g.fillRoundRect(hintX, hintY - g.fontMetrics.ascent, hintWidth, hintHeight, 10, 10)
 
-                g.color = Color(90, 90, 90) // darker text
+                g.color = Color(160, 160, 160) // lighter gray for text
                 g.drawString(hint, hintX + 10, hintY)
 
-                // -----------------------------
-                // 2. Draw the ghost suggestion
-                // -----------------------------
+                // 2. Draw ghost suggestion after caret
                 for (segment in segments) {
                     val lines = segment.text.lines()
-                    var x = targetRegion.x
                     for (line in lines) {
                         g.color = segment.color
                         g.drawString(line, x, y)
@@ -80,15 +84,18 @@ class GhostCodeManager(private val editor: Editor) {
                         segmentBounds.add(line to Rectangle(x, y - g.fontMetrics.ascent, width, height))
 
                         y += lineHeight
-                        x = targetRegion.x
+                        x = caretXY.x // reset for new line
                     }
                 }
             }
+
         }
 
         currentInlay = inlayModel.addInlineElement(offset, true, renderer)
         addClickListener()
     }
+
+
 
     private fun addClickListener() {
         editor.contentComponent.addMouseListener(object : MouseAdapter() {

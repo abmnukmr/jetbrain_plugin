@@ -1,5 +1,6 @@
 package com.github.abmnukmr.jetbrainplugin.startup
 
+import com.github.abmnukmr.jetbrainplugin.EditorController.CodeContext
 import com.github.abmnukmr.jetbrainplugin.intellisence.AcceptGhostTextAction
 import com.github.abmnukmr.jetbrainplugin.intellisence.GhostCodeManager
 import com.github.abmnukmr.jetbrainplugin.intellisence.GhostTextManager
@@ -64,7 +65,7 @@ class CodeSuggestionActivity : ProjectActivity {
 
                     codeToWrite = ""
                     CoroutineScope(Dispatchers.Default).launch {
-                        delay(1000)
+                      //  delay(1000)
                         debounce = true
                     }
                 }
@@ -82,7 +83,7 @@ class CodeSuggestionActivity : ProjectActivity {
                 ghostManager.clearAllGhostText()
                 codeToWrite=""
                 CoroutineScope(Dispatchers.Default).launch {
-                    delay(1000)
+                   // delay(1000)
                     debounce =true
                 }
             }
@@ -103,8 +104,8 @@ class CodeSuggestionActivity : ProjectActivity {
                 val editors = EditorFactory.getInstance().getEditors(document, project)
                 val editor = editors.firstOrNull() ?: return
 
-                val textBeforeCaret = getTextBeforeCaret(editor)
-                val textAfterCaret = getTextAfterCaret(editor)
+                val textBeforeCaret = CodeContext().getTextBeforeCaret(editor)
+                val textAfterCaret = CodeContext().getTextAfterCaret(editor)
                 val caretOffset = editor.caretModel.offset
                 val lineNumber = document.getLineNumber(caretOffset)
                 val lineStart = document.getLineStartOffset(lineNumber)
@@ -114,13 +115,20 @@ class CodeSuggestionActivity : ProjectActivity {
                 val language = psiFile?.language?.id ?: "Unknown"
                 textLeft = document.getText(TextRange(lineStart, caretOffset))
                 val textRight = document.getText(TextRange(caretOffset, lineEnd))
-                if (debounce && textRight.length<2) {
+                val offset = editor.caretModel.offset
+                val text = editor.document.charsSequence
+
+                val isInMiddleOfWord = offset > 0 &&
+                        offset < text.length &&
+                        Character.isJavaIdentifierPart(text[offset - 1]) && // left is part of word
+                        Character.isJavaIdentifierPart(text[offset])
+                if (debounce && !isInMiddleOfWord) {
                     debounce = false;
                     // Call your HTTP client
                     client.fetchCompletionAsync(
                         codeBeforeCaret = textBeforeCaret,
                         codeAfterCaret = textAfterCaret,
-                        query = "",
+                        query = "Generate the next logical code snippet at the caret, following $language idiomatic style.",
                         language = language,
                         onSuccess = { completionResponse ->
                             codeToWrite = completionResponse.completion
@@ -139,11 +147,13 @@ class CodeSuggestionActivity : ProjectActivity {
 
                             if(textManager.getVisibilityStatus() && !codeToWrite.isBlank() ) textManager.clearAllGhostText()
 
+                            val lineCount = codeToWrite.lines().size
+
                             val segment = GhostCodeManager.GhostSegment(codeToWrite, Color.GRAY)
-                            ghostManager.showCodeGhostText(listOf(segment))
+                            ghostManager.showCodeGhostCode(listOf(segment))
 
                             CoroutineScope(Dispatchers.Default).launch {
-                                delay(1000)
+                               // delay(1000)
                                 debounce =true
                             }
 
@@ -163,27 +173,6 @@ class CodeSuggestionActivity : ProjectActivity {
         },project)
     }
 
-    private fun getTextBeforeCaret(editor: Editor, maxLines: Int = 60): String {
-        val document = editor.document
-        val caretOffset = editor.caretModel.offset
-        val caretLine = document.getLineNumber(caretOffset)
-
-        // Get start line ensuring we don't go negative
-        val startLine = (caretLine - maxLines).coerceAtLeast(0)
-        val startOffset = document.getLineStartOffset(startLine)
-
-        return document.getText(TextRange(startOffset, caretOffset))
-    }
-    private fun getTextAfterCaret(editor: Editor, maxLines: Int = 20): String {
-        val document = editor.document
-        val caretOffset = editor.caretModel.offset
-        val caretLine = document.getLineNumber(caretOffset)
-
-        val endLine = (caretLine + maxLines).coerceAtMost(document.lineCount - 1)
-        val endOffset = document.getLineEndOffset(endLine)
-
-        return document.getText(TextRange(caretOffset, endOffset))
-    }
 
 
 }

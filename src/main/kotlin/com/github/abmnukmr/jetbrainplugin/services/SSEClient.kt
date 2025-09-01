@@ -2,6 +2,7 @@ package com.github.abmnukmr.jetbrainplugin.services
 
 import com.google.gson.Gson
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.vcs.ActionType
 import groovy.json.StringEscapeUtils
 import kotlinx.coroutines.*
 import org.cef.browser.CefBrowser
@@ -109,10 +110,15 @@ class SSEClient {
         )
     }
 
+    enum class ActionType {
+        FIX, REVIEW, SEARCH
+    }
     fun fetchInlineCorrectionWordStream(
-        fullCode: String,
+        codeBeforeCaret: String,
+        codeAfterCaret: String,
         selectedCode: String,
         query: String,
+        actionType: ActionType = ActionType.SEARCH,
         language: String,
         onChunk: (String) -> Unit,
         onError: (String) -> Unit,
@@ -123,9 +129,11 @@ class SSEClient {
             try {
                 val url = URL("http://localhost:8000/inline-correct-stream")
                 val payload = mapOf(
-                    "fullCode" to fullCode,
+                    "codeBeforeCaret" to codeBeforeCaret,
+                    "codeAfterCaret" to codeAfterCaret,
                     "selectedCode" to selectedCode,
                     "query" to query,
+                    "actionType" to actionType,
                     "language" to language
                 )
                 val jsonPayload = Gson().toJson(payload)

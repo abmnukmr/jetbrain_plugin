@@ -10,8 +10,14 @@ import com.intellij.openapi.editor.event.EditorMouseEvent
 import com.intellij.openapi.editor.event.EditorMouseListener
 import com.intellij.openapi.editor.event.EditorMouseMotionListener
 import com.intellij.openapi.editor.markup.TextAttributes
+import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.JBColor
+import com.intellij.ui.awt.RelativePoint
 import java.awt.*
+import javax.swing.BorderFactory
+import javax.swing.JButton
+import javax.swing.JLabel
+import javax.swing.JPanel
 
 /**
  * Manages inline "ghost text" (like GitHub Copilot style).
@@ -37,9 +43,9 @@ class GhostTextManager(private val editor: Editor) {
                 listOf(str to Color(120, 193, 243, 80)) // single segment with a color
             } else {
                 listOf(
-                    "  ⌘ + Enter " to Color(120, 193, 243, 100),
+                    "⌃ + ⇧ + L" to Color(120, 193, 243, 100),
                     "to open " to Color(128, 128, 128, 100),
-                    "Precommit AI" to Color(255, 170, 170, 100)
+                    "PreCommit AI" to Color(255, 170, 170, 100)
                 )
             }
 
@@ -75,6 +81,8 @@ class GhostTextManager(private val editor: Editor) {
         iSGhostTextVisibility = true;
         addListeners()
     }
+
+
 
     private fun addListeners() {
         if (listenersAdded) return
